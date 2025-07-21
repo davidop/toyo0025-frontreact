@@ -1,36 +1,61 @@
-// server.js - Versión simplificada para Azure App Service
-import express from 'express';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-// Configuración básica para ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// server.js - Versión compatible con Azure App Service Windows
+const express = require('express');
+const path = require('path');
 
 // Crear aplicación Express
 const app = express();
 
-// Puerto para el servidor
+// Puerto para el servidor (Azure usa process.env.PORT)
 const port = process.env.PORT || 8080;
 
 // Configuración básica
 app.use(express.json());
 
-// Servir archivos estáticos desde la carpeta dist
-const distPath = path.join(__dirname, 'dist');
-app.use(express.static(distPath));
+// Log para debugging en Azure
+console.log('🚀 Iniciando servidor Node.js...');
+console.log('📂 Directorio actual:', __dirname);
+console.log('🌐 Puerto:', port);
 
-// Ruta simple para verificar que el servidor está funcionando
+// Servir archivos estáticos
+app.use(express.static(__dirname));
+
+// Ruta de salud para verificar que el servidor funciona
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', message: 'Servidor funcionando correctamente' });
+  console.log('✅ Health check solicitado');
+  res.json({ 
+    status: 'ok', 
+    message: 'Servidor funcionando correctamente',
+    timestamp: new Date().toISOString(),
+    directory: __dirname
+  });
 });
 
-// Ruta comodín para SPA - debe estar al final
-app.use((req, res) => {
-  res.sendFile(path.join(distPath, 'index.html'));
+// Log de todas las solicitudes para debugging
+app.use((req, res, next) => {
+  console.log(`📝 ${req.method} ${req.url}`);
+  next();
+});
+
+// Ruta comodín para SPA - DEBE estar al final
+app.get('*', (req, res) => {
+  const indexPath = path.join(__dirname, 'index.html');
+  console.log('📄 Enviando index.html desde:', indexPath);
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error('❌ Error enviando index.html:', err);
+      res.status(500).send('Error interno del servidor');
+    }
+  });
+});
+
+// Manejo de errores
+app.use((err, req, res, next) => {
+  console.error('❌ Error del servidor:', err);
+  res.status(500).send('Error interno del servidor');
 });
 
 // Iniciar el servidor
 app.listen(port, () => {
-  console.log(`Servidor iniciado en http://localhost:${port}`);
+  console.log(`✅ Servidor iniciado en puerto ${port}`);
+  console.log(`🌐 URL: http://localhost:${port}`);
 });
