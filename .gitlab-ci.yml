@@ -74,12 +74,20 @@ deploy:
       echo "🌍 Desplegando a: $SITE_NAME"
 
       # Deploy usando Web Deploy REST API
-      curl -X POST \
+      echo "🔄 Iniciando despliegue..."
+      if curl -X POST \
         "https://$SITE_NAME/api/zipdeploy" \
         -u "$USER_NAME:$USER_PWD" \
         -H "Content-Type: application/zip" \
         -T deploy.zip \
-        --fail-with-body
+        --fail \
+        --silent \
+        --show-error; then
+        echo "✅ Despliegue exitoso"
+      else
+        echo "❌ Error en el despliegue"
+        exit 1
+      fi
     - echo "🎉 ¡Despliegue completado!"
     - echo "🌐 Tu aplicación está disponible en:"
     - echo "   https://dev-tae-eu-w-tes-cms-win.azurewebsites.net"
