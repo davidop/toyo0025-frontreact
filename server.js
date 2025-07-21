@@ -1,15 +1,13 @@
 // server.js - Versión compatible con Azure App Service Windows
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
 
 // Crear aplicación Express
 const app = express();
 
 // Puerto para el servidor (Azure usa process.env.PORT)
 const port = process.env.PORT || 8080;
-
-// Configuración básica
-app.use(express.json());
 
 // Log para debugging en Azure
 console.log('🚀 Iniciando servidor Node.js...');
@@ -18,7 +16,6 @@ console.log('🌐 Puerto:', port);
 
 // Verificar si existe la carpeta dist
 const distPath = path.join(__dirname, 'dist');
-const fs = require('fs');
 
 if (fs.existsSync(distPath)) {
   console.log('✅ Carpeta dist encontrada');
@@ -39,7 +36,8 @@ app.get('/api/health', (req, res) => {
     status: 'ok', 
     message: 'Servidor funcionando correctamente',
     timestamp: new Date().toISOString(),
-    directory: __dirname
+    directory: __dirname,
+    distExists: fs.existsSync(distPath)
   });
 });
 
@@ -59,25 +57,29 @@ app.get('*', (req, res) => {
   }
   
   console.log('📄 Enviando index.html desde:', indexPath);
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      console.error('❌ Error enviando index.html:', err);
-      console.log('📂 Contenido del directorio:');
-      try {
-        const files = fs.readdirSync(__dirname);
-        console.log(files);
-      } catch (dirErr) {
-        console.error('❌ Error leyendo directorio:', dirErr);
-      }
-      res.status(500).send('Error interno del servidor - index.html no encontrado');
+  
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    console.error('❌ index.html no encontrado en ninguna ubicación');
+    console.log('📂 Contenido del directorio raíz:');
+    try {
+      const files = fs.readdirSync(__dirname);
+      console.log(files);
+    } catch (dirErr) {
+      console.error('❌ Error leyendo directorio:', dirErr);
     }
-  });
-});
-
-// Manejo de errores
-app.use((err, req, res, _next) => {
-  console.error('❌ Error del servidor:', err);
-  res.status(500).send('Error interno del servidor');
+    res.status(404).send(`
+      <html>
+        <body>
+          <h1>Error 404 - Aplicación no encontrada</h1>
+          <p>La aplicación no se ha buildeado correctamente.</p>
+          <p>Directory: ${__dirname}</p>
+          <p>Dist exists: ${fs.existsSync(distPath)}</p>
+        </body>
+      </html>
+    `);
+  }
 });
 
 // Iniciar el servidor
