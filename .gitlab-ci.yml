@@ -39,7 +39,7 @@ build:
 # 🚀 ETAPA 2: Desplegar a Azure (MANUAL)
 deploy:
   stage: deploy
-  image: mcr.microsoft.com/azure-cli:latest
+  image: ubuntu:20.04
   only:
     - main
     - develop
@@ -49,7 +49,7 @@ deploy:
     - build
   before_script:
     - echo "🌐 Preparando despliegue a Azure..."
-    - apt-get update && apt-get install -y zip
+    - apt-get update && apt-get install -y curl zip grep sed
   script:
     - echo "📦 Empaquetando aplicación..."
     - cd dist
