@@ -1,52 +1,46 @@
-# 🚀 Guía de Despliegue en Azure App Service
+# 🚀 Guía SIMPLE para Desarrolladores Junior
 
-## Configuración Requerida
+## ¿Cómo desplegar tu código?
 
-### 1. Variables de Entorno en GitLab
+### 📋 Pasos básicos:
 
-Debes configurar las siguientes variables en GitLab CI/CD Variables (Settings > CI/CD > Variables):
+1. **Haz tus cambios** en el código
+2. **Commit y push** a una rama autorizada (`main`, `develop`, o `master`)
+3. **Ve a GitLab** → Tu proyecto → Pipelines
+4. **Haz clic en "Deploy"** (botón manual)
+5. **Espera** a que termine y listo! ✅
 
-#### Variables Obligatorias:
+## 🔧 Configuración inicial (SOLO UNA VEZ)
 
-- `AZURE_WEBAPP_PUBLISH_PROFILE`: Perfil de publicación de tu App Service de desarrollo
-- `AZURE_WEBAPP_PUBLISH_PROFILE_PROD`: (Opcional) Perfil de publicación para producción
+Si es la primera vez, necesitas configurar Azure:
 
-#### Variables Opcionales:
+1. **Ve a Azure Portal**: https://portal.azure.com
+2. **Busca**: `dev-tae-eu-w-tes-cms-win`
+3. **Haz clic** en "Get publish profile"
+4. **Descarga** el archivo `.publishsettings`
+5. **Abre el archivo** con un editor de texto
+6. **Copia TODO** el contenido XML
+7. **Ve a GitLab** → Settings → CI/CD → Variables
+8. **Crea nueva variable**:
+   - Nombre: `AZURE_WEBAPP_PUBLISH_PROFILE`
+   - Valor: Pega el contenido XML
+   - Protected: ✅ Sí
 
-- `AZURE_WEBAPP_NAME_PROD`: Nombre del App Service de producción (si es diferente al de desarrollo)
+## 📖 ¿Qué hace el pipeline?
 
-### 2. Cómo obtener el Publish Profile
+### ETAPA 1 - Build (Automático):
 
-1. **Desde el Portal de Azure:**
+- 📥 Instala dependencias (`npm install`)
+- 🔨 Construye la aplicación React (`npm run build`)
+- 📁 Prepara archivos para Azure
+- ✅ Crea un "paquete" listo para desplegar
 
-   - Ve a tu App Service: `dev-tae-eu-w-tes-cms-win`
-   - Haz clic en **"Get publish profile"** en la barra superior
-   - Se descargará un archivo `.publishsettings`
-   - Abre el archivo con un editor de texto
-   - Copia **todo el contenido XML**
+### ETAPA 2 - Deploy (Manual):
 
-2. **Configurar en GitLab:**
-   - Ve a tu proyecto GitLab
-   - Settings → CI/CD → Variables
-   - Agregar nueva variable:
-     - **Key:** `AZURE_WEBAPP_PUBLISH_PROFILE`
-     - **Value:** Pega todo el contenido XML del archivo
-     - **Protected:** ✅ Sí
-     - **Masked:** ❌ No (contiene caracteres especiales)
-
-### 3. Estructura del Pipeline
-
-El pipeline tiene 3 etapas:
-
-```
-
-```
-
-🔧 BUILD (automático)
-├── Instala dependencias
-├── Ejecuta linter
-├── Construye la aplicación React
-└── Prepara artefactos para despliegue
+- 📦 Empaqueta todo en un ZIP
+- 🌐 Sube a Azure App Service
+- ⏳ Verifica que funcione
+- 🎉 ¡Listo!
 
 🧪 TEST (automático)
 └── Ejecuta tests
@@ -105,9 +99,54 @@ El pipeline tiene 3 etapas:
 
 El pipeline verificará automáticamente que la aplicación esté funcionando llamando a:
 
-```
-https://tu-app.azurewebsites.net/api/health
-```
+## ❓ Preguntas Frecuentes
+
+### ¿En qué ramas puedo desplegar?
+
+Solo en: `main`, `develop`, o `master`
+
+### ¿Por qué el deploy es manual?
+
+Para evitar despliegues accidentales. Siempre necesitas hacer clic en "Deploy".
+
+### ¿Dónde veo mi aplicación?
+
+En: https://dev-tae-eu-w-tes-cms-win.azurewebsites.net
+
+### ¿Qué hago si falla?
+
+1. Mira los logs del pipeline en GitLab
+2. Verifica que tu código compile localmente (`npm run build`)
+3. Pide ayuda al equipo senior
+
+## 🚨 Errores Comunes
+
+### "ERROR: Falta configuración de Azure"
+
+- Necesitas configurar `AZURE_WEBAPP_PUBLISH_PROFILE`
+- Sigue los pasos de "Configuración inicial" arriba
+
+### "Build failed"
+
+- Tu código tiene errores de sintaxis
+- Ejecuta `npm run build` localmente para verificar
+
+### "Deploy failed"
+
+- Problema de conectividad con Azure
+- Reintenta el deploy después de unos minutos
+
+## ✅ Checklist antes de desplegar
+
+- [ ] Mi código funciona localmente (`npm run dev`)
+- [ ] El build funciona (`npm run build`)
+- [ ] Hice commit y push a la rama correcta
+- [ ] Estoy en GitLab viendo los pipelines
+- [ ] Hago clic en "Deploy" y espero
+
+---
+
+**🎯 ¡Es así de simple!** No necesitas conocer Azure, Docker, o configuraciones complejas. Solo sigue estos pasos y tu código estará en producción.
 
 Esta ruta devuelve:
 

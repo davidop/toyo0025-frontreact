@@ -11,7 +11,6 @@ const __dirname = path.dirname(__filename);
 const app = express();
 
 // Puerto para el servidor
-// eslint-disable-next-line no-undef
 const port = process.env.PORT || 8080;
 
 // Configuración básica

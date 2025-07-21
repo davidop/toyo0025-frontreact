@@ -52,7 +52,7 @@ const ButtonsContainer = styled(Box)(({ theme }) => ({
   }
 }));
 
-const SubeventWizard = ({ formik, parentId, onSaveAndExit, isSubmitting, isEditing = false }) => {
+const SubeventWizard = ({ formik, parentId: _parentId, onSaveAndExit, isSubmitting, isEditing = false }) => {
   const [activeStep, setActiveStep] = useState(0);
   // Step validation for each step
   const validateStep = () => {
@@ -85,7 +85,7 @@ const SubeventWizard = ({ formik, parentId, onSaveAndExit, isSubmitting, isEditi
 
       case 2: // Location
         formik.validateField('ubicacion.lugar');
-        isValid = !Boolean(formik.errors.ubicacion?.lugar);
+        isValid = !formik.errors.ubicacion?.lugar;
         break;
 
       case 3: // Program
@@ -112,7 +112,7 @@ const SubeventWizard = ({ formik, parentId, onSaveAndExit, isSubmitting, isEditi
 
       case 7: // Status
         formik.validateField('estado');
-        isValid = !Boolean(formik.errors.estado);
+        isValid = !formik.errors.estado;
         break;
 
       default:

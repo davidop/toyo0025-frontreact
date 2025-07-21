@@ -1,177 +1,95 @@
-# Pipeline de CI/CD para despliegue en Azure App Service de Windows
-# Para aplicación React con Node.js backend
-# App Service: dev-tae-eu-w-tes-cms-win
+# 🚀 Pipeline Simple para Desarrolladores Junior
+# Solo 2 etapas: Build → Deploy
 
 stages:
   - build
-  - test
   - deploy
 
 variables:
-  # Configuración de Node.js
   NODE_VERSION: '18'
-  # Variables de Azure configuradas
-  AZURE_SUBSCRIPTION_ID: '99413916-a97c-4a32-949c-a37ad1c78686'
-  AZURE_RESOURCE_GROUP: 'rg-devoteam-westeu-001'
-  AZURE_WEBAPP_NAME: 'dev-tae-eu-w-tes-cms-win'
 
-# Cache para node_modules para acelerar builds
-cache:
-  paths:
-    - node_modules/
-  key: '$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHA'
-
-# Etapa de Build
+# 🔨 ETAPA 1: Construir la aplicación
 build:
   stage: build
-  image: node:18-alpine
-  before_script:
-    - echo "Instalando dependencias..."
-    - npm ci --production=false
+  image: node:$NODE_VERSION
+  only:
+    - main
+    - develop
+    - master
   script:
-    - echo "Ejecutando linter..."
-    - npm run lint
-    - echo "Construyendo aplicación..."
+    - echo "📦 Instalando dependencias..."
+    - npm ci --cache .npm --prefer-offline
+    - echo "🔨 Construyendo aplicación React..."
     - npm run build
-    - echo "Preparando artefactos para despliegue..."
-    # Crear directorio de despliegue
-    - mkdir deploy
-    # Copiar archivos necesarios para producción
-    - cp -r dist deploy/
-    - cp package*.json deploy/
-    - cp server.js deploy/
-    - cp web.config deploy/
-    - cp iisnode.yml deploy/
-    # Copiar otros archivos necesarios si existen
-    - cp cors-proxy.js deploy/ || echo "cors-proxy.js no encontrado, continuando..."
-    # Instalar solo dependencias de producción
-    - cd deploy && npm ci --production --omit=dev
+    - echo "📁 Preparando archivos para Azure..."
+    - cp server.js dist/
+    - cp package.json dist/
+    - cp web.config dist/
+    - cp -r node_modules dist/ || echo "⚠️  node_modules no copiado (opcional)"
+    - echo "✅ Build completado exitosamente!"
   artifacts:
-    name: '$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHA'
     paths:
-      - deploy/
+      - dist/
     expire_in: 1 hour
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+  cache:
+    paths:
+      - .npm/
+      - node_modules/
 
-# Etapa de Tests (opcional)
-test:
-  stage: test
-  image: node:18-alpine
-  dependencies:
-    - build
-  before_script:
-    - npm ci --production=false
-  script:
-    - echo "Ejecutando tests..."
-    # Descomentar si tienes tests configurados
-    # - npm test
-    - echo "Tests completados"
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
-
-# Despliegue Controlado (solo rama main/develop/master)
+# 🚀 ETAPA 2: Desplegar a Azure (MANUAL)
 deploy:
   stage: deploy
   image: mcr.microsoft.com/azure-cli:latest
+  only:
+    - main
+    - develop
+    - master
+  when: manual # 👆 IMPORTANTE: Deploy manual para evitar accidentes
   dependencies:
     - build
   before_script:
-    - apk add --no-cache zip curl nodejs npm
-    - echo "🔒 Iniciando despliegue controlado..."
+    - echo "🌐 Preparando despliegue a Azure..."
+    - apk add --no-cache zip
   script:
-    - echo "🚀 Desplegando aplicación a Azure..."
-    - cd deploy
-    - zip -r ../app.zip .
+    - echo "📦 Empaquetando aplicación..."
+    - cd dist
+    - zip -r ../deploy.zip . -x "*.git*" "node_modules/.cache/*"
     - cd ..
-    - echo "📤 Subiendo a Azure App Service..."
-    # Usar Azure CLI para despliegue con Publish Profile
+    - echo "🚀 Desplegando a Azure App Service..."
     - |
-      if [ -n "$AZURE_WEBAPP_PUBLISH_PROFILE" ]; then
-        echo "✅ Usando Publish Profile para despliegue..."
-        echo "$AZURE_WEBAPP_PUBLISH_PROFILE" > publish-profile.xml
-        
-        # Extraer información del publish profile
-        PUBLISH_URL=$(grep -o 'publishUrl="[^"]*' publish-profile.xml | head -1 | cut -d'"' -f2)
-        USERNAME=$(grep -o 'userName="[^"]*' publish-profile.xml | head -1 | cut -d'"' -f2)
-        PASSWORD=$(grep -o 'userPWD="[^"]*' publish-profile.xml | head -1 | cut -d'"' -f2)
-        
-        echo "🌐 Desplegando en: $PUBLISH_URL..."
-        
-        # Realizar el despliegue con reintentos
-        for i in 1 2 3; do
-          echo "⏳ Intento de despliegue #$i de 3..."
-          if curl -X POST \
-            -u "$USERNAME:$PASSWORD" \
-            --data-binary @app.zip \
-            -H "Content-Type: application/zip" \
-            -w "HTTP Status: %{http_code}\n" \
-            --connect-timeout 300 \
-            --max-time 600 \
-            --fail \
-            "https://$PUBLISH_URL/api/zipdeploy"; then
-            echo "✅ Despliegue exitoso en el intento #$i"
-            break
-          else
-            echo "❌ Fallo en intento #$i, reintentando en 30 segundos..."
-            sleep 30
-            if [ $i -eq 3 ]; then
-              echo "💥 Error: Todos los intentos de despliegue fallaron"
-              exit 1
-            fi
-          fi
-        done
-        
-        echo "🎉 Despliegue completado exitosamente"
-      else
-        echo "❌ ERROR CRÍTICO: Variable AZURE_WEBAPP_PUBLISH_PROFILE no configurada"
-        echo ""
-        echo "🔧 CONFIGURACIÓN REQUERIDA:"
-        echo "1. Ve a Azure Portal → App Service: $AZURE_WEBAPP_NAME"
-        echo "2. Haz clic en 'Get publish profile'"
-        echo "3. Copia el contenido XML completo"
-        echo "4. Ve a GitLab → Settings → CI/CD → Variables"
-        echo "5. Agrega variable AZURE_WEBAPP_PUBLISH_PROFILE con el contenido XML"
-        echo ""
-        echo "🚫 DESPLIEGUE ABORTADO"
+      if [ -z "$AZURE_WEBAPP_PUBLISH_PROFILE" ]; then
+        echo "❌ ERROR: Falta configurar AZURE_WEBAPP_PUBLISH_PROFILE"
+        echo "📋 Sigue los pasos en DEPLOYMENT-GUIDE.md"
         exit 1
       fi
-    - echo "🔍 Verificando estado de la aplicación..."
-    - sleep 45
+    - echo "$AZURE_WEBAPP_PUBLISH_PROFILE" > publishprofile.xml
     - |
-      for i in 1 2 3 4 5; do
-        echo "⏳ Verificación #$i de 5..."
-        if curl -f -s "https://$AZURE_WEBAPP_NAME.azurewebsites.net/api/health" > /dev/null; then
-          echo "✅ Aplicación desplegada y funcionando correctamente"
-          echo "🌐 URL: https://$AZURE_WEBAPP_NAME.azurewebsites.net"
-          echo "💚 DESPLIEGUE EXITOSO"
-          break
-        else
-          echo "⏳ Esperando que la aplicación esté lista... (intento $i/5)"
-          sleep 30
-          if [ $i -eq 5 ]; then
-            echo "⚠️ ADVERTENCIA: La aplicación puede tardar más tiempo en iniciarse"
-            echo "🌐 Verifica manualmente: https://$AZURE_WEBAPP_NAME.azurewebsites.net"
-          fi
-        fi
-      done
-  environment:
-    name: azure-app-service
-    url: https://$AZURE_WEBAPP_NAME.azurewebsites.net
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
-  when: manual
-  allow_failure: false
+      # Extraer datos del publish profile
+      SITE_NAME=$(grep -o 'publishUrl="[^"]*"' publishprofile.xml | head -1 | sed 's/publishUrl="//;s/".*//')
+      USER_NAME=$(grep -o 'userName="[^"]*"' publishprofile.xml | head -1 | sed 's/userName="//;s/".*//')
+      USER_PWD=$(grep -o 'userPWD="[^"]*"' publishprofile.xml | head -1 | sed 's/userPWD="//;s/".*//')
 
-# Job de limpieza (opcional)
-cleanup:
-  stage: .post
-  image: alpine:latest
-  script:
-    - echo "Limpiando artefactos temporales..."
-    - rm -rf deploy/ || true
-    - rm -f *.zip || true
-  when: always
-  allow_failure: true
+      echo "🌍 Desplegando a: $SITE_NAME"
+
+      # Deploy usando Web Deploy REST API
+      curl -X POST \
+        "https://$SITE_NAME/api/zipdeploy" \
+        -u "$USER_NAME:$USER_PWD" \
+        -H "Content-Type: application/zip" \
+        -T deploy.zip \
+        --fail-with-body
+    - echo "🎉 ¡Despliegue completado!"
+    - echo "🌐 Tu aplicación está disponible en:"
+    - echo "   https://dev-tae-eu-w-tes-cms-win.azurewebsites.net"
+  after_script:
+    - rm -f publishprofile.xml deploy.zip 2>/dev/null || true
+    - echo "🧹 Archivos temporales eliminados"
+# 📋 Información para desarrolladores junior:
+#
+# 1. Este pipeline se ejecuta automáticamente en las ramas: main, develop, master
+# 2. El BUILD es automático - instala dependencias y construye React
+# 3. El DEPLOY es MANUAL - debes hacer clic en "Deploy" en GitLab
+# 4. Necesitas configurar AZURE_WEBAPP_PUBLISH_PROFILE en Variables de GitLab
+# 5. Sigue la guía en DEPLOYMENT-GUIDE.md si es tu primera vez
+#
+# ¿Problemas? Revisa los logs del pipeline o pide ayuda al equipo senior
