@@ -14,8 +14,6 @@ build:
   image: node:$NODE_VERSION
   only:
     - main
-    - develop
-    - master
   script:
     - echo "📦 Instalando dependencias..."
     - npm ci --cache .npm --prefer-offline --silent
@@ -76,13 +74,13 @@ deploy:
       echo "📍 Sitio: $SITE_NAME"
       echo "👤 Usuario: ${USER_NAME:0:10}..."
       echo "🔑 Password: ${USER_PWD:+[SET]}"
-      
+
       # Verificar que el archivo ZIP existe y no está vacío
       if [ ! -f deploy.zip ]; then
         echo "❌ ERROR: No se encontró deploy.zip"
         exit 1
       fi
-      
+
       if [ ! -s deploy.zip ]; then
         echo "❌ ERROR: deploy.zip está vacío"
         exit 1
@@ -93,11 +91,11 @@ deploy:
 
       # Deploy usando Web Deploy REST API con mejor manejo de errores
       echo "🔄 Iniciando despliegue..."
-      
+
       # Función para intentar el despliegue con reintentos
       MAX_RETRIES=3
       RETRY_COUNT=0
-      
+
       while [ $RETRY_COUNT -lt $MAX_RETRIES ]; do
         # Crear archivo temporal para capturar respuesta
         RESPONSE_FILE=$(mktemp)
@@ -141,7 +139,7 @@ deploy:
           exit 1
         fi
       done
-      
+
       if [ $RETRY_COUNT -eq $MAX_RETRIES ]; then
         echo "❌ Máximo de reintentos alcanzado. El servidor sigue ocupado."
         exit 1
