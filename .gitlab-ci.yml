@@ -18,14 +18,15 @@ build:
     - master
   script:
     - echo "📦 Instalando dependencias..."
-    - npm ci --cache .npm --prefer-offline
+    - npm ci --cache .npm --prefer-offline --silent
     - echo "🔨 Construyendo aplicación React..."
-    - npm run build
+    - npm run build --silent
     - echo "📁 Preparando archivos para Azure..."
     - cp server.js dist/
     - cp package.json dist/
     - cp web.config dist/
-    - cp -r node_modules dist/ || echo "⚠️  node_modules no copiado (opcional)"
+    - echo "📦 Instalando dependencias de producción..."
+    - cd dist && npm ci --only=production --silent && cd ..
     - echo "✅ Build completado exitosamente!"
   artifacts:
     paths:
@@ -49,12 +50,13 @@ deploy:
     - build
   before_script:
     - echo "🌐 Preparando despliegue a Azure..."
-    - apt-get update && apt-get install -y curl zip grep sed
+    - apt-get update -qq && apt-get install -y -qq curl zip grep sed > /dev/null 2>&1
   script:
     - echo "📦 Empaquetando aplicación..."
     - cd dist
-    - zip -r ../deploy.zip . -x "*.git*" "node_modules/.cache/*"
+    - zip -r ../deploy.zip . -x "*.git*" "node_modules/.cache/*" -q
     - cd ..
+    - echo "📦 Paquete creado:" && ls -lh deploy.zip
     - echo "🚀 Desplegando a Azure App Service..."
     - |
       if [ -z "$AZURE_WEBAPP_PUBLISH_PROFILE" ]; then
