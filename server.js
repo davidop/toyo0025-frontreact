@@ -1,66 +1,44 @@
-// server.js - Versión compatible con Azure App Service Windows
+// server.js - Versión ultra-simple para Azure App Service Windows
 const express = require('express');
 const path = require('path');
 const fs = require('fs');
 
-// Crear aplicación Express
 const app = express();
+const port = process.env.PORT || 8080;
 
-// Puerto para el servidor (Azure usa process.env.PORT)
-const port = process.env.PORT || process.env.IISNODE_PORT || 8080;
+console.log('Starting server on port:', port);
 
-// Configuración básica para JSON parsing
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true }));
-
-// Log para debugging en Azure
-console.log('🚀 Iniciando servidor Node.js...');
-console.log('📂 Directorio actual:', __dirname);
-console.log('🌐 Puerto:', port);
-console.log('🔧 NODE_ENV:', process.env.NODE_ENV);
-console.log('🔧 IISNODE_PORT:', process.env.IISNODE_PORT);
-
-// Verificar si existe la carpeta dist
+// Configurar archivos estáticos
 const distPath = path.join(__dirname, 'dist');
-
-try {
-  if (fs.existsSync(distPath)) {
-    console.log('✅ Carpeta dist encontrada');
-    // Servir archivos estáticos desde dist
-    app.use(express.static(distPath, {
-      maxAge: '1d',
-      etag: false
-    }));
-    console.log('📁 Sirviendo archivos desde:', distPath);
-  } else {
-    console.log('⚠️ Carpeta dist no encontrada, sirviendo desde raíz');
-    // Servir archivos estáticos desde raíz como fallback
-    app.use(express.static(__dirname, {
-      maxAge: '1d',
-      etag: false
-    }));
-    console.log('📁 Sirviendo archivos desde:', __dirname);
-  }
-} catch (error) {
-  console.error('❌ Error configurando archivos estáticos:', error);
+if (fs.existsSync(distPath)) {
+  console.log('Serving from dist/');
+  app.use(express.static(distPath));
+} else {
+  console.log('Serving from root');
+  app.use(express.static(__dirname));
 }
 
-// Ruta de salud para verificar que el servidor funciona
+// API de health
 app.get('/api/health', (req, res) => {
-  console.log('✅ Health check solicitado');
-  res.json({ 
-    status: 'ok', 
-    message: 'Servidor funcionando correctamente',
-    timestamp: new Date().toISOString(),
-    directory: __dirname,
-    distExists: fs.existsSync(distPath)
-  });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Log de todas las solicitudes para debugging
-app.use((req, res, next) => {
-  console.log(`📝 ${req.method} ${req.url}`);
-  next();
+// SPA fallback
+app.get('*', (req, res) => {
+  let indexPath = path.join(__dirname, 'dist', 'index.html');
+  if (!fs.existsSync(indexPath)) {
+    indexPath = path.join(__dirname, 'index.html');
+  }
+  
+  if (fs.existsSync(indexPath)) {
+    res.sendFile(indexPath);
+  } else {
+    res.status(404).send('<h1>App not found</h1><p>Build files missing</p>');
+  }
+});
+
+app.listen(port, () => {
+  console.log('Server started on port:', port);
 });
 
 // Ruta comodín para SPA - DEBE estar al final
