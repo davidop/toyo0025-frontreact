@@ -49,7 +49,7 @@ deploy:
     - build
   before_script:
     - echo "🌐 Preparando despliegue a Azure..."
-    - apk add --no-cache zip
+    - apt-get update && apt-get install -y zip
   script:
     - echo "📦 Empaquetando aplicación..."
     - cd dist
