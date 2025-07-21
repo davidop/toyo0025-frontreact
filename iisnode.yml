@@ -1,23 +1,6 @@
-# Configuración mínima de iisnode para Azure App Service
-# Configuración simple para evitar errores HRESULT
-
-# Deshabilitar logging para evitar problemas de permisos
-loggingEnabled: false
-debuggingEnabled: false
-devErrorsEnabled: false
-
-# Configuración básica de procesos
-nodeProcessCountPerApplication: 1
-maxConcurrentRequestsPerProcess: 1024
-
-# Variables de entorno
-NODE_ENV: production
-
-# Configuración de debugging (desactivar en producción)
-debuggingEnabled: false
-
-# Variables de entorno
+# Configuración ultra-mínima para iisnode en Azure App Service
 node_env: production
+nodeProcessCountPerApplication: 1
 
 # Configuración de procesos
 maxConcurrentRequestsPerProcess: 1024
