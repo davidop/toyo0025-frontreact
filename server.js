@@ -1,127 +1,34 @@
-// server.js - Versión mejorada para Azure App Service Windows
+// server.js - Versión ultra-simple para Azure App Service Windows
 const express = require('express');
 const path = require('path');
-const fs = require('fs');
 
 const app = express();
 const port = process.env.PORT || 8080;
 
-console.log('🚀 Iniciando servidor...');
-console.log('📁 Directorio actual:', __dirname);
-console.log('🌍 Puerto:', port);
+// Log básico
+console.log('Server starting on port:', port);
 
-// Middleware básico
-try {
-  // Verificar si dist/ existe
-  const distPath = path.join(__dirname, 'dist');
-  if (fs.existsSync(distPath)) {
-    console.log('✅ Carpeta dist encontrada');
-    app.use(express.static(distPath));
-  } else {
-    console.log('⚠️ Carpeta dist no encontrada, usando raíz');
-  }
-  
-  // Servir también desde raíz como fallback
-  app.use(express.static(__dirname));
-  
-} catch (error) {
-  console.error('❌ Error configurando archivos estáticos:', error);
-}
+// Servir archivos estáticos
+app.use(express.static(path.join(__dirname, 'dist')));
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
-  console.log('❤️ Health check solicitado');
-  try {
-    const distExists = fs.existsSync(path.join(__dirname, 'dist'));
-    const files = fs.readdirSync(__dirname).slice(0, 10); // Solo primeros 10
-    
-    res.json({ 
-      status: 'OK', 
-      timestamp: new Date().toISOString(),
-      directory: __dirname,
-      distExists: distExists,
-      files: files
-    });
-  } catch (error) {
-    console.error('❌ Error en health check:', error);
-    res.status(500).json({ error: 'Health check failed' });
-  }
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Catch-all handler: envía de vuelta React's index.html file
+// Fallback para SPA
 app.get('*', (req, res) => {
-  console.log('📄 Solicitando:', req.url);
-  
-  try {
-    // Primero intentar desde dist/
-    let indexPath = path.join(__dirname, 'dist', 'index.html');
-    
-    if (fs.existsSync(indexPath)) {
-      console.log('✅ Enviando index.html desde dist/');
-      res.sendFile(indexPath);
-    } else {
-      // Intentar desde raíz
-      indexPath = path.join(__dirname, 'index.html');
-      if (fs.existsSync(indexPath)) {
-        console.log('✅ Enviando index.html desde raíz');
-        res.sendFile(indexPath);
-      } else {
-        console.log('❌ index.html no encontrado');
-        const files = fs.readdirSync(__dirname).slice(0, 20);
-        res.status(404).send(`
-          <!DOCTYPE html>
-          <html>
-          <head><title>Debug Info</title></head>
-          <body>
-            <h1>🔍 Debug Information</h1>
-            <p><strong>Directorio:</strong> ${__dirname}</p>
-            <p><strong>Dist exists:</strong> ${fs.existsSync(path.join(__dirname, 'dist'))}</p>
-            <h3>Archivos disponibles:</h3>
-            <ul>${files.map(f => `<li>${f}</li>`).join('')}</ul>
-          </body>
-          </html>
-        `);
-      }
+  const indexPath = path.join(__dirname, 'dist', 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error('Error sending file:', err);
+      res.status(404).send('App not found');
     }
-  } catch (error) {
-    console.error('❌ Error en catch-all:', error);
-    res.status(500).send(`
-      <h1>Error interno</h1>
-      <p>Error: ${error.message}</p>
-      <p>Directory: ${__dirname}</p>
-    `);
-  }
-});
-
-// Manejo de errores global
-app.use((error, req, res, _next) => {
-  console.error('💥 Error no manejado:', error);
-  if (res.headersSent) {
-    return;
-  }
-  res.status(500).json({
-    error: 'Internal Server Error',
-    message: error.message,
-    stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
   });
 });
 
-// Iniciar servidor
-try {
-  app.listen(port, () => {
-    console.log(`✅ Servidor corriendo en puerto ${port}`);
-  });
-} catch (error) {
-  console.error('💥 Error iniciando servidor:', error);
-}
-
-// Manejo de errores de proceso
-process.on('uncaughtException', (err) => {
-  console.error('💥 Error no capturado:', err);
-});
-
-process.on('unhandledRejection', (err) => {
-  console.error('💥 Promesa rechazada:', err);
+app.listen(port, () => {
+  console.log('Server running on port:', port);
 });
 
 // Ruta comodín para SPA - DEBE estar al final

@@ -28,21 +28,29 @@ jobs:
         run: |
           npm ci
           npm run build --if-present
-
+          
+      - name: Clean up for deployment
+        run: |
+          echo "Preparing deployment package..."
+          echo "Files before cleanup:"
+          dir
+          
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
         with:
           name: node-app
           path: |
-            .
+            dist/
+            server.js
+            package.json
+            package-lock.json
+            web.config
+            iisnode.yml
             !node_modules/
-            !.git/
-            !.github/
             !src/
             !public/
-            !*.md
-            !eslint.config.js
-            !vite.config.js
+            !.git/
+            !.github/
 
   deploy:
     runs-on: ubuntu-latest
