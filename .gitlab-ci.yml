@@ -43,7 +43,6 @@ deploy:
     - main
     - develop
     - master
-  when: on_success # � Deploy automático cuando el build sea exitoso
   dependencies:
     - build
   before_script:
