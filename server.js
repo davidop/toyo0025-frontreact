@@ -16,8 +16,21 @@ console.log('🚀 Iniciando servidor Node.js...');
 console.log('📂 Directorio actual:', __dirname);
 console.log('🌐 Puerto:', port);
 
-// Servir archivos estáticos
-app.use(express.static(__dirname));
+// Verificar si existe la carpeta dist
+const distPath = path.join(__dirname, 'dist');
+const fs = require('fs');
+
+if (fs.existsSync(distPath)) {
+  console.log('✅ Carpeta dist encontrada');
+  // Servir archivos estáticos desde dist
+  app.use(express.static(distPath));
+  console.log('📁 Sirviendo archivos desde:', distPath);
+} else {
+  console.log('⚠️ Carpeta dist no encontrada, sirviendo desde raíz');
+  // Servir archivos estáticos desde raíz como fallback
+  app.use(express.static(__dirname));
+  console.log('📁 Sirviendo archivos desde:', __dirname);
+}
 
 // Ruta de salud para verificar que el servidor funciona
 app.get('/api/health', (req, res) => {
@@ -38,18 +51,31 @@ app.use((req, res, next) => {
 
 // Ruta comodín para SPA - DEBE estar al final
 app.get('*', (req, res) => {
-  const indexPath = path.join(__dirname, 'index.html');
+  // Intentar primero desde dist, luego desde raíz
+  let indexPath = path.join(__dirname, 'dist', 'index.html');
+  
+  if (!fs.existsSync(indexPath)) {
+    indexPath = path.join(__dirname, 'index.html');
+  }
+  
   console.log('📄 Enviando index.html desde:', indexPath);
   res.sendFile(indexPath, (err) => {
     if (err) {
       console.error('❌ Error enviando index.html:', err);
-      res.status(500).send('Error interno del servidor');
+      console.log('📂 Contenido del directorio:');
+      try {
+        const files = fs.readdirSync(__dirname);
+        console.log(files);
+      } catch (dirErr) {
+        console.error('❌ Error leyendo directorio:', dirErr);
+      }
+      res.status(500).send('Error interno del servidor - index.html no encontrado');
     }
   });
 });
 
 // Manejo de errores
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   console.error('❌ Error del servidor:', err);
   res.status(500).send('Error interno del servidor');
 });
