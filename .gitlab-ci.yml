@@ -37,7 +37,7 @@ build:
       - .npm/
       - node_modules/
 
-# 🚀 ETAPA 2: Desplegar a Azure (MANUAL)
+# 🚀 ETAPA 2: Desplegar a Azure (AUTOMÁTICO)
 deploy:
   stage: deploy
   image: ubuntu:20.04
@@ -45,7 +45,7 @@ deploy:
     - main
     - develop
     - master
-  when: manual # 👆 IMPORTANTE: Deploy manual para evitar accidentes
+  when: on_success # � Deploy automático cuando el build sea exitoso
   dependencies:
     - build
   before_script:
@@ -98,8 +98,9 @@ deploy:
 #
 # 1. Este pipeline se ejecuta automáticamente en las ramas: main, develop, master
 # 2. El BUILD es automático - instala dependencias y construye React
-# 3. El DEPLOY es MANUAL - debes hacer clic en "Deploy" en GitLab
+# 3. El DEPLOY es AUTOMÁTICO - se ejecuta inmediatamente después del build exitoso
 # 4. Necesitas configurar AZURE_WEBAPP_PUBLISH_PROFILE en Variables de GitLab
 # 5. Sigue la guía en DEPLOYMENT-GUIDE.md si es tu primera vez
 #
+# ⚠️  ATENCIÓN: Los cambios se despliegan automáticamente a producción
 # ¿Problemas? Revisa los logs del pipeline o pide ayuda al equipo senior
