@@ -1,0 +1,32 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      # Montar el código fuente
+      - ..:/workspace:cached
+      # Preservar node_modules en un volumen nombrado
+      - node_modules:/workspace/node_modules
+    
+    # Variables de entorno
+    environment:
+      - NODE_ENV=development
+      - AZURE_TENANT_ID=3f93adcc-4946-4596-aeb9-9af740604449
+      - AZURE_SUBSCRIPTION_ID=99413916-a97c-4a32-949c-a37ad1c78686
+      - AZURE_RESOURCE_GROUP=rg-devoteam-westeu-001
+      - AZURE_WEBAPP_NAME=dev-tae-eu-w-tes-cms-win
+    
+    # Puertos expuestos
+    ports:
+      - "5173:5173"  # Vite dev server
+      - "3000:3000"  # Express server
+      - "4173:4173"  # Vite preview
+    
+    # Comando por defecto
+    command: sleep infinity
+
+volumes:
+  node_modules:

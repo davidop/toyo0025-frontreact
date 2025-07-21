@@ -1,0 +1,52 @@
+{
+  "name": "Toyota Events - React Development",
+  "image": "mcr.microsoft.com/vscode/devcontainers/javascript-node:18-bullseye",
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+
+  "features": {
+    "ghcr.io/devcontainers/features/azure-cli:1": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "dsznajder.es7-react-js-snippets",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "eamodio.gitlens",
+        "ms-vscode.azurecli",
+        "ms-azuretools.vscode-azureappservice",
+        "rangav.vscode-thunder-client",
+        "christian-kohler.npm-intellisense",
+        "formulahendry.auto-rename-tag",
+        "github.copilot",
+        "github.copilot-chat",
+        "ms-azuretools.vscode-azure-github-copilot"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "files.autoSave": "afterDelay",
+        "eslint.enable": true,
+        "git.enableSmartCommit": true
+      }
+    }
+  },
+
+  "remoteEnv": {
+    "NODE_ENV": "development",
+    "AZURE_TENANT_ID": "3f93adcc-4946-4596-aeb9-9af740604449",
+    "AZURE_SUBSCRIPTION_ID": "99413916-a97c-4a32-949c-a37ad1c78686",
+    "AZURE_RESOURCE_GROUP": "rg-devoteam-westeu-001",
+    "AZURE_WEBAPP_NAME": "dev-tae-eu-w-tes-cms-win"
+  },
+
+  "forwardPorts": [5173, 3000, 4173],
+
+  "postCreateCommand": "npm install && echo '✅ DevContainer listo para Toyota Events!'",
+
+  "remoteUser": "node"
+}

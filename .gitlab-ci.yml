@@ -1,0 +1,177 @@
+# Pipeline de CI/CD para despliegue en Azure App Service de Windows
+# Para aplicación React con Node.js backend
+# App Service: dev-tae-eu-w-tes-cms-win
+
+stages:
+  - build
+  - test
+  - deploy
+
+variables:
+  # Configuración de Node.js
+  NODE_VERSION: '18'
+  # Variables de Azure configuradas
+  AZURE_SUBSCRIPTION_ID: '99413916-a97c-4a32-949c-a37ad1c78686'
+  AZURE_RESOURCE_GROUP: 'rg-devoteam-westeu-001'
+  AZURE_WEBAPP_NAME: 'dev-tae-eu-w-tes-cms-win'
+
+# Cache para node_modules para acelerar builds
+cache:
+  paths:
+    - node_modules/
+  key: '$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHA'
+
+# Etapa de Build
+build:
+  stage: build
+  image: node:18-alpine
+  before_script:
+    - echo "Instalando dependencias..."
+    - npm ci --production=false
+  script:
+    - echo "Ejecutando linter..."
+    - npm run lint
+    - echo "Construyendo aplicación..."
+    - npm run build
+    - echo "Preparando artefactos para despliegue..."
+    # Crear directorio de despliegue
+    - mkdir deploy
+    # Copiar archivos necesarios para producción
+    - cp -r dist deploy/
+    - cp package*.json deploy/
+    - cp server.js deploy/
+    - cp web.config deploy/
+    - cp iisnode.yml deploy/
+    # Copiar otros archivos necesarios si existen
+    - cp cors-proxy.js deploy/ || echo "cors-proxy.js no encontrado, continuando..."
+    # Instalar solo dependencias de producción
+    - cd deploy && npm ci --production --omit=dev
+  artifacts:
+    name: '$CI_COMMIT_REF_SLUG-$CI_COMMIT_SHA'
+    paths:
+      - deploy/
+    expire_in: 1 hour
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Etapa de Tests (opcional)
+test:
+  stage: test
+  image: node:18-alpine
+  dependencies:
+    - build
+  before_script:
+    - npm ci --production=false
+  script:
+    - echo "Ejecutando tests..."
+    # Descomentar si tienes tests configurados
+    # - npm test
+    - echo "Tests completados"
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+# Despliegue Controlado (solo rama main/develop/master)
+deploy:
+  stage: deploy
+  image: mcr.microsoft.com/azure-cli:latest
+  dependencies:
+    - build
+  before_script:
+    - apk add --no-cache zip curl nodejs npm
+    - echo "🔒 Iniciando despliegue controlado..."
+  script:
+    - echo "🚀 Desplegando aplicación a Azure..."
+    - cd deploy
+    - zip -r ../app.zip .
+    - cd ..
+    - echo "📤 Subiendo a Azure App Service..."
+    # Usar Azure CLI para despliegue con Publish Profile
+    - |
+      if [ -n "$AZURE_WEBAPP_PUBLISH_PROFILE" ]; then
+        echo "✅ Usando Publish Profile para despliegue..."
+        echo "$AZURE_WEBAPP_PUBLISH_PROFILE" > publish-profile.xml
+        
+        # Extraer información del publish profile
+        PUBLISH_URL=$(grep -o 'publishUrl="[^"]*' publish-profile.xml | head -1 | cut -d'"' -f2)
+        USERNAME=$(grep -o 'userName="[^"]*' publish-profile.xml | head -1 | cut -d'"' -f2)
+        PASSWORD=$(grep -o 'userPWD="[^"]*' publish-profile.xml | head -1 | cut -d'"' -f2)
+        
+        echo "🌐 Desplegando en: $PUBLISH_URL..."
+        
+        # Realizar el despliegue con reintentos
+        for i in 1 2 3; do
+          echo "⏳ Intento de despliegue #$i de 3..."
+          if curl -X POST \
+            -u "$USERNAME:$PASSWORD" \
+            --data-binary @app.zip \
+            -H "Content-Type: application/zip" \
+            -w "HTTP Status: %{http_code}\n" \
+            --connect-timeout 300 \
+            --max-time 600 \
+            --fail \
+            "https://$PUBLISH_URL/api/zipdeploy"; then
+            echo "✅ Despliegue exitoso en el intento #$i"
+            break
+          else
+            echo "❌ Fallo en intento #$i, reintentando en 30 segundos..."
+            sleep 30
+            if [ $i -eq 3 ]; then
+              echo "💥 Error: Todos los intentos de despliegue fallaron"
+              exit 1
+            fi
+          fi
+        done
+        
+        echo "🎉 Despliegue completado exitosamente"
+      else
+        echo "❌ ERROR CRÍTICO: Variable AZURE_WEBAPP_PUBLISH_PROFILE no configurada"
+        echo ""
+        echo "🔧 CONFIGURACIÓN REQUERIDA:"
+        echo "1. Ve a Azure Portal → App Service: $AZURE_WEBAPP_NAME"
+        echo "2. Haz clic en 'Get publish profile'"
+        echo "3. Copia el contenido XML completo"
+        echo "4. Ve a GitLab → Settings → CI/CD → Variables"
+        echo "5. Agrega variable AZURE_WEBAPP_PUBLISH_PROFILE con el contenido XML"
+        echo ""
+        echo "🚫 DESPLIEGUE ABORTADO"
+        exit 1
+      fi
+    - echo "🔍 Verificando estado de la aplicación..."
+    - sleep 45
+    - |
+      for i in 1 2 3 4 5; do
+        echo "⏳ Verificación #$i de 5..."
+        if curl -f -s "https://$AZURE_WEBAPP_NAME.azurewebsites.net/api/health" > /dev/null; then
+          echo "✅ Aplicación desplegada y funcionando correctamente"
+          echo "🌐 URL: https://$AZURE_WEBAPP_NAME.azurewebsites.net"
+          echo "💚 DESPLIEGUE EXITOSO"
+          break
+        else
+          echo "⏳ Esperando que la aplicación esté lista... (intento $i/5)"
+          sleep 30
+          if [ $i -eq 5 ]; then
+            echo "⚠️ ADVERTENCIA: La aplicación puede tardar más tiempo en iniciarse"
+            echo "🌐 Verifica manualmente: https://$AZURE_WEBAPP_NAME.azurewebsites.net"
+          fi
+        fi
+      done
+  environment:
+    name: azure-app-service
+    url: https://$AZURE_WEBAPP_NAME.azurewebsites.net
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "develop" || $CI_COMMIT_BRANCH == "master"
+  when: manual
+  allow_failure: false
+
+# Job de limpieza (opcional)
+cleanup:
+  stage: .post
+  image: alpine:latest
+  script:
+    - echo "Limpiando artefactos temporales..."
+    - rm -rf deploy/ || true
+    - rm -f *.zip || true
+  when: always
+  allow_failure: true

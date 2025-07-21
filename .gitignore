@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Archivos de despliegue manual PROHIBIDOS
+*.ps1
+*.publishsettings
+azure.json
+setup-*.sh
+deploy-*.sh
+.env.local
+.env.production
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +31,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# DevContainer archivos temporales
+.devcontainer/dev-start.sh
+.devcontainer/build-and-preview.sh
+publish-profile.xml
+
+# Archivos locales de desarrollo
+.env.local
+.vscode/launch.json
+.vscode/tasks.json

@@ -1,0 +1,29 @@
+# Configuración de iisnode para Azure App Service
+# Este archivo configura cómo IIS ejecuta la aplicación Node.js
+
+# Especifica el punto de entrada de la aplicación
+nodeProcessCommandLine: "D:\Program Files (x86)\nodejs\node.exe"
+
+# Configuración de logging
+loggingEnabled: true
+logDirectory: 'iisnode'
+
+# Configuración de debugging (desactivar en producción)
+debuggingEnabled: false
+
+# Variables de entorno
+node_env: production
+
+# Configuración de procesos
+maxConcurrentRequestsPerProcess: 1024
+maxNamedPipeConnectionRetry: 24
+namedPipeConnectionRetryDelay: 250
+
+# Configuración de timeout
+nodeProcessCountPerApplication: 1
+
+# Habilitar compresión
+enableXFF: true
+
+# Configuración de archivos de intercepción de errores
+interceptor: 'iisnode/interceptor.js'
