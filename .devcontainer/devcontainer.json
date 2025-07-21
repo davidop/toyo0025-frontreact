@@ -19,7 +19,9 @@
         "christian-kohler.npm-intellisense",
         "formulahendry.auto-rename-tag",
         "github.copilot",
-        "github.copilot-chat"
+        "github.copilot-chat",
+        "ms-azuretools.vscode-azure-github-copilot",
+        "gitlab.gitlab-workflow"
       ],
       "settings": {
         "editor.formatOnSave": true,
@@ -38,7 +40,7 @@
 
   "forwardPorts": [5173, 3000, 4173],
 
-  "postCreateCommand": "./devcontainer/post-create.sh",
+  "postCreateCommand": "./.devcontainer/post-create.sh",
 
   "remoteUser": "node"
 }
