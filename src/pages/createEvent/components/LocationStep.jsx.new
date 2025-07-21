@@ -1,0 +1,554 @@
+import React from 'react';
+import PropTypes from 'prop-types';
+import {
+  Box,
+  Grid,
+  TextField,
+  Typography,
+  Button,
+  IconButton,
+  useTheme,
+  useMediaQuery,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  CircularProgress,
+  Avatar,
+  FormHelperText
+} from '@mui/material';
+import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { useQuery } from '@tanstack/react-query';
+import iconoService from '../../../services/iconoService';
+
+const LocationStep = ({ formik }) => {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  
+  // Función para generar IDs únicos para los elementos de listas
+  const generateUniqueId = () => `id_${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Consulta para obtener los iconos disponibles
+  const { data: iconos, isLoading, isError } = useQuery({
+    queryKey: ['iconos'],
+    queryFn: iconoService.getAllIconos,
+    staleTime: 5 * 60 * 1000 // 5 minutos
+  });
+  
+  // Handlers for adding new items
+  const handleAddDirection = () => {
+    const directions = [...(formik.values.location?.directions || [])];
+    directions.push({ 
+      id: generateUniqueId(), 
+      name: '', 
+      description: '', 
+      iconoId: '' 
+    });
+    formik.setFieldValue('location.directions', directions);
+  };
+
+  const handleAddParking = () => {
+    const parkings = [...(formik.values.location?.parkings || [])];
+    parkings.push({ 
+      id: generateUniqueId(), 
+      name: '', 
+      description: '', 
+      mapsUrl: '', 
+      iconoId: '' 
+    });
+    formik.setFieldValue('location.parkings', parkings);
+  };
+
+  const handleAddInterestPoint = () => {
+    const interestPoints = [...(formik.values.location?.interestPoints || [])];
+    interestPoints.push({ 
+      id: generateUniqueId(), 
+      name: '', 
+      description: '', 
+      mapsUrl: '',
+      iconoId: '' 
+    });
+    formik.setFieldValue('location.interestPoints', interestPoints);
+  };
+
+  return (
+    <Box>
+      <Typography variant="h6" gutterBottom>
+        Ubicación del Evento
+      </Typography>
+      
+      {/* Main Location Section */}
+      <Grid container spacing={2}>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            id="location.place"
+            name="location.place"
+            label="Lugar"
+            value={formik.values.location.place || ''}
+            onChange={formik.handleChange}
+            error={formik.touched.location?.place && Boolean(formik.errors.location?.place)}
+            helperText={formik.touched.location?.place && formik.errors.location?.place}
+            margin="normal"
+          />
+        </Grid>
+        
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            id="location.address"
+            name="location.address"
+            label="Dirección"
+            value={formik.values.location.address || ''}
+            onChange={formik.handleChange}
+            error={formik.touched.location?.address && Boolean(formik.errors.location?.address)}
+            helperText={formik.touched.location?.address && formik.errors.location?.address}
+            margin="normal"
+          />
+        </Grid>
+        
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            id="location.mapsUrl"
+            name="location.mapsUrl"
+            label="Enlace Google Maps"
+            value={formik.values.location.mapsUrl || ''}
+            onChange={formik.handleChange}
+            error={formik.touched.location?.mapsUrl && Boolean(formik.errors.location?.mapsUrl)}
+            helperText={formik.touched.location?.mapsUrl && formik.errors.location?.mapsUrl}
+            margin="normal"
+          />
+        </Grid>
+      </Grid>
+      
+      {/* Directions (Cómo llegar) Section */}
+      <Typography variant="h6" gutterBottom mt={3}>
+        Cómo llegar
+      </Typography>
+
+      {formik.values.location?.directions?.map((direction, index) => (
+        <Box key={direction.id} sx={{ mb: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="subtitle1">Dirección {index + 1}</Typography>
+            <IconButton
+              onClick={() => {
+                const directions = [...formik.values.location.directions];
+                directions.splice(index, 1);
+                formik.setFieldValue('location.directions', directions);
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Box>  
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                id={`location.directions[${index}].name`}
+                name={`location.directions[${index}].name`}
+                label="Nombre"
+                value={direction.name}
+                onChange={formik.handleChange}
+                error={
+                  formik.touched.location?.directions?.[index]?.name &&
+                  Boolean(formik.errors.location?.directions?.[index]?.name)
+                }
+                helperText={
+                  formik.touched.location?.directions?.[index]?.name &&
+                  formik.errors.location?.directions?.[index]?.name
+                }
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                id={`location.directions[${index}].description`}
+                name={`location.directions[${index}].description`}
+                label="Descripción"
+                multiline
+                rows={2}
+                value={direction.description}
+                onChange={formik.handleChange}
+                error={
+                  formik.touched.location?.directions?.[index]?.description &&
+                  Boolean(formik.errors.location?.directions?.[index]?.description)
+                }
+                helperText={
+                  formik.touched.location?.directions?.[index]?.description &&
+                  formik.errors.location?.directions?.[index]?.description
+                }
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel id={`location-directions-${index}-icono-label`}>Icono</InputLabel>
+                <Select
+                  labelId={`location-directions-${index}-icono-label`}
+                  id={`location.directions[${index}].iconoId`}
+                  name={`location.directions[${index}].iconoId`}
+                  value={direction.iconoId || ''}
+                  onChange={formik.handleChange}
+                  disabled={isLoading}
+                  error={
+                    formik.touched.location?.directions?.[index]?.iconoId &&
+                    Boolean(formik.errors.location?.directions?.[index]?.iconoId)
+                  }
+                >
+                  <MenuItem value="">Seleccionar icono</MenuItem>
+                  {iconos?.map(icono => (
+                    <MenuItem key={icono.id} value={icono.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar 
+                          src={icono.url_lectura_segura} 
+                          alt={icono.nombre}
+                          sx={{ width: 24, height: 24, mr: 1 }}
+                        />
+                        {icono.nombre}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+                {formik.touched.location?.directions?.[index]?.iconoId && 
+                 formik.errors.location?.directions?.[index]?.iconoId && (
+                  <FormHelperText error>
+                    {formik.errors.location.directions[index].iconoId}
+                  </FormHelperText>
+                )}
+                {isLoading && <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                  <CircularProgress size={20} />
+                </Box>}
+                {isError && <FormHelperText error>Error al cargar iconos</FormHelperText>}
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Box>
+      ))}
+      
+      <Button
+        variant="outlined"
+        startIcon={<AddIcon />}
+        onClick={handleAddDirection}
+        fullWidth={isMobile}
+        sx={{ mt: 2 }}
+      >
+        Añadir indicación
+      </Button>
+      
+      {/* Parkings Section */}
+      <Typography variant="h6" gutterBottom mt={3}>
+        Aparcamientos
+      </Typography>
+
+      {formik.values.location?.parkings?.map((parking, index) => (
+        <Box key={parking.id} sx={{ mb: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="subtitle1">Aparcamiento {index + 1}</Typography>
+            <IconButton
+              onClick={() => {
+                const parkings = [...formik.values.location.parkings];
+                parkings.splice(index, 1);
+                formik.setFieldValue('location.parkings', parkings);
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Box>  
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                id={`location.parkings[${index}].name`}
+                name={`location.parkings[${index}].name`}
+                label="Nombre"
+                value={parking.name}
+                onChange={formik.handleChange}
+                error={
+                  formik.touched.location?.parkings?.[index]?.name &&
+                  Boolean(formik.errors.location?.parkings?.[index]?.name)
+                }
+                helperText={
+                  formik.touched.location?.parkings?.[index]?.name &&
+                  formik.errors.location?.parkings?.[index]?.name
+                }
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                id={`location.parkings[${index}].description`}
+                name={`location.parkings[${index}].description`}
+                label="Descripción"
+                multiline
+                rows={2}
+                value={parking.description}
+                onChange={formik.handleChange}
+                error={
+                  formik.touched.location?.parkings?.[index]?.description &&
+                  Boolean(formik.errors.location?.parkings?.[index]?.description)
+                }
+                helperText={
+                  formik.touched.location?.parkings?.[index]?.description &&
+                  formik.errors.location?.parkings?.[index]?.description
+                }
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                id={`location.parkings[${index}].mapsUrl`}
+                name={`location.parkings[${index}].mapsUrl`}
+                label="Enlace Google Maps"
+                value={parking.mapsUrl}
+                onChange={formik.handleChange}
+                error={
+                  formik.touched.location?.parkings?.[index]?.mapsUrl &&
+                  Boolean(formik.errors.location?.parkings?.[index]?.mapsUrl)
+                }
+                helperText={
+                  formik.touched.location?.parkings?.[index]?.mapsUrl &&
+                  formik.errors.location?.parkings?.[index]?.mapsUrl
+                }
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel id={`location-parkings-${index}-icono-label`}>Icono</InputLabel>
+                <Select
+                  labelId={`location-parkings-${index}-icono-label`}
+                  id={`location.parkings[${index}].iconoId`}
+                  name={`location.parkings[${index}].iconoId`}
+                  value={parking.iconoId || ''}
+                  onChange={formik.handleChange}
+                  disabled={isLoading}
+                  error={
+                    formik.touched.location?.parkings?.[index]?.iconoId &&
+                    Boolean(formik.errors.location?.parkings?.[index]?.iconoId)
+                  }
+                >
+                  <MenuItem value="">Seleccionar icono</MenuItem>
+                  {iconos?.map(icono => (
+                    <MenuItem key={icono.id} value={icono.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar 
+                          src={icono.url_lectura_segura} 
+                          alt={icono.nombre}
+                          sx={{ width: 24, height: 24, mr: 1 }}
+                        />
+                        {icono.nombre}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+                {formik.touched.location?.parkings?.[index]?.iconoId && 
+                 formik.errors.location?.parkings?.[index]?.iconoId && (
+                  <FormHelperText error>
+                    {formik.errors.location.parkings[index].iconoId}
+                  </FormHelperText>
+                )}
+                {isLoading && <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                  <CircularProgress size={20} />
+                </Box>}
+                {isError && <FormHelperText error>Error al cargar iconos</FormHelperText>}
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Box>
+      ))}
+      
+      <Button
+        variant="outlined"
+        startIcon={<AddIcon />}
+        onClick={handleAddParking}
+        fullWidth={isMobile}
+        sx={{ mt: 2 }}
+      >
+        Añadir aparcamiento
+      </Button>
+      
+      {/* Interest Points Section */}
+      <Typography variant="h6" gutterBottom mt={3}>
+        Lugares de interés
+      </Typography>
+
+      {formik.values.location?.interestPoints?.map((point, index) => (
+        <Box key={point.id} sx={{ mb: 2, p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="subtitle1">Punto de interés {index + 1}</Typography>
+            <IconButton
+              onClick={() => {
+                const interestPoints = [...formik.values.location.interestPoints];
+                interestPoints.splice(index, 1);
+                formik.setFieldValue('location.interestPoints', interestPoints);
+              }}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </Box>  
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                id={`location.interestPoints[${index}].name`}
+                name={`location.interestPoints[${index}].name`}
+                label="Nombre"
+                value={point.name}
+                onChange={formik.handleChange}
+                error={
+                  formik.touched.location?.interestPoints?.[index]?.name &&
+                  Boolean(formik.errors.location?.interestPoints?.[index]?.name)
+                }
+                helperText={
+                  formik.touched.location?.interestPoints?.[index]?.name &&
+                  formik.errors.location?.interestPoints?.[index]?.name
+                }
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                id={`location.interestPoints[${index}].description`}
+                name={`location.interestPoints[${index}].description`}
+                label="Descripción"
+                multiline
+                rows={2}
+                value={point.description}
+                onChange={formik.handleChange}
+                error={
+                  formik.touched.location?.interestPoints?.[index]?.description &&
+                  Boolean(formik.errors.location?.interestPoints?.[index]?.description)
+                }
+                helperText={
+                  formik.touched.location?.interestPoints?.[index]?.description &&
+                  formik.errors.location?.interestPoints?.[index]?.description
+                }
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                id={`location.interestPoints[${index}].mapsUrl`}
+                name={`location.interestPoints[${index}].mapsUrl`}
+                label="Enlace Google Maps"
+                value={point.mapsUrl}
+                onChange={formik.handleChange}
+                error={
+                  formik.touched.location?.interestPoints?.[index]?.mapsUrl &&
+                  Boolean(formik.errors.location?.interestPoints?.[index]?.mapsUrl)
+                }
+                helperText={
+                  formik.touched.location?.interestPoints?.[index]?.mapsUrl &&
+                  formik.errors.location?.interestPoints?.[index]?.mapsUrl
+                }
+              />
+            </Grid>
+            
+            <Grid item xs={12}>
+              <FormControl fullWidth margin="normal">
+                <InputLabel id={`location-interestPoints-${index}-icono-label`}>Icono</InputLabel>
+                <Select
+                  labelId={`location-interestPoints-${index}-icono-label`}
+                  id={`location.interestPoints[${index}].iconoId`}
+                  name={`location.interestPoints[${index}].iconoId`}
+                  value={point.iconoId || ''}
+                  onChange={formik.handleChange}
+                  disabled={isLoading}
+                  error={
+                    formik.touched.location?.interestPoints?.[index]?.iconoId &&
+                    Boolean(formik.errors.location?.interestPoints?.[index]?.iconoId)
+                  }
+                >
+                  <MenuItem value="">Seleccionar icono</MenuItem>
+                  {iconos?.map(icono => (
+                    <MenuItem key={icono.id} value={icono.id}>
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Avatar 
+                          src={icono.url_lectura_segura} 
+                          alt={icono.nombre}
+                          sx={{ width: 24, height: 24, mr: 1 }}
+                        />
+                        {icono.nombre}
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+                {formik.touched.location?.interestPoints?.[index]?.iconoId && 
+                 formik.errors.location?.interestPoints?.[index]?.iconoId && (
+                  <FormHelperText error>
+                    {formik.errors.location.interestPoints[index].iconoId}
+                  </FormHelperText>
+                )}
+                {isLoading && <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                  <CircularProgress size={20} />
+                </Box>}
+                {isError && <FormHelperText error>Error al cargar iconos</FormHelperText>}
+              </FormControl>
+            </Grid>
+          </Grid>
+        </Box>
+      ))}
+      
+      <Button
+        variant="outlined"
+        startIcon={<AddIcon />}
+        onClick={handleAddInterestPoint}
+        fullWidth={isMobile}
+        sx={{ mt: 2 }}
+      >
+        Añadir lugar de interés
+      </Button>
+    </Box>
+  );
+};
+
+LocationStep.propTypes = {
+  formik: PropTypes.shape({
+    values: PropTypes.shape({
+      location: PropTypes.shape({
+        place: PropTypes.string,
+        address: PropTypes.string,
+        mapsUrl: PropTypes.string,
+        directions: PropTypes.arrayOf(
+          PropTypes.shape({
+            id: PropTypes.string,
+            name: PropTypes.string,
+            description: PropTypes.string,
+            iconoId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+          })
+        ),
+        parkings: PropTypes.arrayOf(
+          PropTypes.shape({
+            id: PropTypes.string,
+            name: PropTypes.string,
+            description: PropTypes.string,
+            mapsUrl: PropTypes.string,
+            iconoId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+          })
+        ),
+        interestPoints: PropTypes.arrayOf(
+          PropTypes.shape({
+            id: PropTypes.string,
+            name: PropTypes.string,
+            description: PropTypes.string,
+            mapsUrl: PropTypes.string,
+            iconoId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+          })
+        ),
+      }),
+    }),
+    touched: PropTypes.object,
+    errors: PropTypes.object,
+    handleChange: PropTypes.func.isRequired,
+    setFieldValue: PropTypes.func.isRequired,
+  }).isRequired,
+};
+
+export default LocationStep;
