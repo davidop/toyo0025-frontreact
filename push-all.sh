@@ -22,7 +22,7 @@ if [ ! -d ".git" ]; then
 fi
 
 # Verificar si hay cambios sin commitear
-if ! git diff-index --quiet HEAD --; then
+if ! git diff-index --quiet HEAD -- 2>/dev/null; then
     if [ -n "$1" ]; then
         echo -e "${YELLOW}📝 Commiteando cambios...${NC}"
         git add .
@@ -32,6 +32,8 @@ if ! git diff-index --quiet HEAD --; then
         echo -e "${RED}❌ Hay cambios sin commitear. Usa: ./push-all.sh 'mensaje commit'${NC}"
         exit 1
     fi
+else
+    echo -e "${GREEN}✅ Working tree limpio, procediendo con push...${NC}"
 fi
 
 # Función para push con manejo de errores
