@@ -1,17 +1,9 @@
-# Configuración ultra-mínima para iisnode en Azure App Service
+# Configuración optimizada para iisnode en Azure App Service
 node_env: production
 nodeProcessCountPerApplication: 1
-
-# Configuración de procesos
 maxConcurrentRequestsPerProcess: 1024
-maxNamedPipeConnectionRetry: 24
-namedPipeConnectionRetryDelay: 250
-
-# Configuración de timeout
-nodeProcessCountPerApplication: 1
-
-# Habilitar compresión
+maxNamedPipeConnectionRetry: 3
+namedPipeConnectionRetryDelay: 1000
 enableXFF: true
-
-# Configuración de archivos de intercepción de errores
-interceptor: 'iisnode/interceptor.js'
+loggingEnabled: true
+devErrorsEnabled: true

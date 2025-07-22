@@ -7,7 +7,8 @@
     "build": "vite build",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 10",
     "preview": "vite preview",
-    "start": "node server.js"
+    "start": "node server.js",
+    "azure:start": "node server.js"
   },
   "dependencies": {
     "@azure/msal-browser": "^3.10.0",
